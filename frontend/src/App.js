@@ -1,10 +1,10 @@
+import React from 'react'
 import './App.css';
 import SceneContainer from './Components/SceneContainer'
 
+
 function App() {
-  return <> 
-    <SceneContainer />
-  </>
+  return <SceneContainer />
 }
 
 export default App;

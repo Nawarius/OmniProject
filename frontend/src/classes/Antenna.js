@@ -1,3 +1,5 @@
+import { ActionManager, ExecuteCodeAction, Matrix } from "@babylonjs/core"
+
 class Antenna {
     constructor(){
         this.top = null
@@ -7,15 +9,21 @@ class Antenna {
     setTop(top){
         this.top = top
     }
-    
     getTop(){
         return this.top
     }
     setTopPosition(pos){
-        this.top.position = pos
+        this.getTop().position = pos
     }
     setTopRotation(rot){
-        this.top.rotation = rot
+        this.getTop().rotation = rot
+    }
+    getTopRotation(){
+        return this.getTop().rotation
+    }
+    setPivotForTop(vector3){
+      let translation = this.getTop().position.subtract(vector3)
+      this.getTop().setPivotMatrix(Matrix.Translation(translation.x, translation.y, translation.z))
     }
     setBottom(bottom){
         this.bottom = bottom
@@ -24,22 +32,39 @@ class Antenna {
         return this.bottom
     }
     setBottomPosition(pos){
-        this.bottom.position = pos
+        this.getBottom().position = pos
     }
     setBottomRotation(rot){
-        this.bottom.rotation = rot
+        this.getBottom().rotation = rot
     }
-    setRotationYButton(button){
+    setAntennaYButton(button){
         this.rotationYButton = button
     }
-    getRotationYButton(button){
+    getAntennaYButton(){
         return this.rotationYButton 
     }
-    setRotationYButtonPosition(pos){
-        this.rotationYButton.position = pos
+    setAntennaYButtonPosition(pos){
+        this.getAntennaYButton().position = pos
     }
-    setRotationYButtonRotation(rot){
-        this.rotationYButton.rotation = rot
+    setAntennaYButtonRotation(rot){
+        this.getAntennaYButton().rotation = rot
+    }
+    setParentAntennaYButton(parent){
+        this.getAntennaYButton().parent = parent
+    }
+    setActions(type, socketRef, scene, coords){
+        this.getAntennaYButton().actionManager = new ActionManager(scene)
+      
+        this.getAntennaYButton().actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnLongPressTrigger, function(){
+            socketRef.current.emit('rotateY', true)
+        }))
+        this.getAntennaYButton().actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnPickUpTrigger, function(){
+            socketRef.current.emit('rotateY', false)
+        }))
+        this.getAntennaYButton().actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, function(){
+            socketRef.current.emit('rotateY', false)
+            socketRef.current.emit('new coords', coords)
+        }))
     }
 }
 
