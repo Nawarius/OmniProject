@@ -9,8 +9,9 @@ const ScenePresent = (props) => {
 
             const engine = new Engine(reactCanvas.current, antialias, engineOptions, adaptToDeviceRatio);
             const scene = new Scene(engine, sceneOptions);
+            //engine.displayLoadingUI()
             if (scene.isReady()) {
-                onSceneReady(scene)
+                onSceneReady(scene, engine)
             } else {
                 scene.onReadyObservable.addOnce(scene => onSceneReady(scene));
             }
@@ -20,6 +21,7 @@ const ScenePresent = (props) => {
                 }
                 scene.render();
             })
+            
             const resize = () => {
                 scene.getEngine().resize();
             }
@@ -32,6 +34,7 @@ const ScenePresent = (props) => {
                     window.removeEventListener('resize', resize);
                 }
             }
+            
         }
         //eslint-disable-next-line react-hooks/exhaustive-deps
     }, [reactCanvas])
