@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { FreeCamera, Vector3, HemisphericLight, SceneLoader } from '@babylonjs/core';
+import { FreeCamera, Vector3, HemisphericLight, SceneLoader, ActionManager, ExecuteCodeAction, PointerEventTypes, UniversalCamera, ArcRotateCameraPointersInput, ArcRotateCamera, MeshBuilder } from '@babylonjs/core';
 import SceneComponent from './ScenePresent'; 
 import Antenna from '../classes/Antenna'
 import ControlButton from '../classes/ControlButton'
@@ -7,6 +7,7 @@ import addGravity from '../functions/addGravity'
 import io from 'socket.io-client'
 import createPeer from '../WebRTC/createPeer'
 import handleRecieveCall from '../WebRTC/Answer'
+import addAnimatedMoveForCamera from '../functions/movePointerAnimation'
 
 const Locator = new Antenna()
 let house = null
@@ -36,13 +37,10 @@ const MainComponent = () => {
    socketRef.current.on('rotationAccessXUp', bool=>{counter2 = bool})
    socketRef.current.on('rotationAccessXDown', bool=>{counter3 = bool})
 
-   //WebRTC
+   //WebRTC BEGIN
    navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
-    //userVideoRef.current.srcObject = stream
     userStreamRef.current = stream
-
     socketRef.current.emit('join audio')
-    //Здесь вижу тех юзеров, которые уже есть
     socketRef.current.on('other user', userID=>{
         callUser(userID, peerRef, socketRef, otherUserRef, partnerVideoRef)
         otherUserRef.current = userID
@@ -51,7 +49,6 @@ const MainComponent = () => {
       otherUserRef.current = userID
     })
     socketRef.current.on('offer', (incoming) => {
-      console.log(otherUserRef.current)
       handleRecieveCall(incoming, peerRef, userStreamRef, socketRef, createPeer, otherUserRef, partnerVideoRef)
     })
     socketRef.current.on('answer', handleAnswer)
@@ -73,16 +70,16 @@ const MainComponent = () => {
     const candidate = new RTCIceCandidate(incoming)
     peerRef.current.addIceCandidate(candidate).catch(err => console.log(err))
   }
-
+//WebRTC END
   const onSceneReady = async function(scene, engine) {
-    engine.displayLoadingUI()
+    engine.displayLoadingUI() 
+
     let camera = new FreeCamera("camera1", new Vector3(5,3,7), scene);
-    //scene.createDefaultVRExperience({useMultiview: true})
-    //camera.setTarget(Vector3.Zero());
+
     const canvas = scene.getEngine().getRenderingCanvas();
     camera.speed = 0.5
     camera.attachControl(canvas, true);
-    
+
     let light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
     light.intensity = 0.8;
     res = await SceneLoader.ImportMeshAsync("", "models/", "SM_Ground.babylon")
@@ -131,7 +128,32 @@ const MainComponent = () => {
       XDownControlButton.setRotation(new Vector3(3,1.6,-2.1))
       XDownControlButton.setActions('xdown', socketRef, scene, rotationAntennaCoords)
       addGravity(scene,camera,[ground, Locator.getBottom(), house ])
-      engine.hideLoadingUI();
+      
+
+      const setNewCameraCoords = ()=>{
+        const pickInfo = scene.pick(scene.pointerX, scene.pointerY)
+        if(pickInfo.pickedMesh.name !== 'Button'){
+          addAnimatedMoveForCamera(camera, scene, pickInfo.pickedPoint._x, pickInfo.pickedPoint._y+2, pickInfo.pickedPoint._z)
+        } 
+      }
+      const movePointerAccess = ()=>{
+        
+      }
+      scene.onPointerObservable.add((pointerInfo) => {      		
+        switch (pointerInfo.type) {
+			    case PointerEventTypes.POINTERPICK:{   
+              setNewCameraCoords()
+              break
+          }
+          case PointerEventTypes.POINTERMOVE:{
+              movePointerAccess()
+              break
+          }
+          default:
+            break
+        }
+    });
+    engine.hideLoadingUI();
   }
   const onRender = scene => {
     if(counter){
@@ -140,11 +162,11 @@ const MainComponent = () => {
     }
     if(counter2){
       Locator.setTopRotation(rotationAntennaCoords)
-      rotationAntennaCoords.x -=0.01
+      if(rotationAntennaCoords.x >= -1) rotationAntennaCoords.x -=0.01
     }
     if(counter3){
       Locator.setTopRotation(rotationAntennaCoords)
-      rotationAntennaCoords.x +=0.01
+      if(rotationAntennaCoords.x <= 0.5) rotationAntennaCoords.x +=0.01
     }
   }
   

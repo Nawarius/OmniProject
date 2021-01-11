@@ -4,12 +4,12 @@ import handleNegotiation from './Offer'
     const peer = new RTCPeerConnection({
         iceServers:[
             {
-                urls: "stun:stun.stunprotocol.org"
+                urls: "stun:stun.l.google.com:19302"
             },
             {
-                urls: 'turn:numb.viagenie.ca',
-                credential: 'muazkh',
-                username: 'webrtc@live.com'
+                url: 'turn:turn.bistri.com:80',
+                credential: 'homeo',
+                username: 'homeo'
             },
         ]
     })

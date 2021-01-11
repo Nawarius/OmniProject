@@ -37,28 +37,16 @@ io.on('connection', socket => {
         users.push(socket.id)
         const otherUser = users.find(id => id !== socket.id)
         if(otherUser){
-            console.log('My ID', socket.id)
-            console.log('Other ID', otherUser)
-            socket.emit('other user', otherUser)
             socket.to(otherUser).emit('user joined', socket.id)
         }
     })
     socket.on('offer', payload => {
-        console.log('OFFER')
-        console.log(payload.target)
-        console.log(socket.id)
         io.to(payload.target).emit('offer', payload)
     })
     socket.on('answer', payload => {
-        console.log('ANSWER')
-        console.log(payload.target)
-        console.log(socket.id)
         io.to(payload.target).emit('answer', payload)
     })
     socket.on('ice-candidate', incoming => {
-        console.log('ICE-CANDIDATE')
-        console.log(incoming.target)
-        console.log(socket.id)
         io.to(incoming.target).emit('ice-candidate', incoming.candidate)
     })
     socket.on('disconnect', ()=>{
