@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { FreeCamera, Vector3, HemisphericLight, SceneLoader, ActionManager, ExecuteCodeAction, PointerEventTypes, UniversalCamera, ArcRotateCameraPointersInput, ArcRotateCamera, MeshBuilder } from '@babylonjs/core';
+import { FreeCamera, Vector3, HemisphericLight, SceneLoader, PointerEventTypes, MeshBuilder, StandardMaterial, Color3, ArcRotateCamera, Color4, KeyboardEventTypes } from '@babylonjs/core';
+import * as GUI from 'babylonjs-gui'
 import SceneComponent from './ScenePresent'; 
 import Antenna from '../classes/Antenna'
 import ControlButton from '../classes/ControlButton'
@@ -9,11 +10,15 @@ import createPeer from '../WebRTC/createPeer'
 import handleRecieveCall from '../WebRTC/Answer'
 import addAnimatedMoveForCamera from '../functions/movePointerAnimation'
 
+import {MonitorWithCoords, Monitor} from '../classes/Monitor'
+
 const Locator = new Antenna()
 let house = null
 let counter = 0, counter2 = 0, counter3 = 0
 let res = null
 let rotationAntennaCoords = 0
+let monitorYCoords = null
+let monitorXCoords = null
 
 const MainComponent = () => {
   const socketRef = useRef()
@@ -74,27 +79,43 @@ const MainComponent = () => {
   const onSceneReady = async function(scene, engine) {
     engine.displayLoadingUI() 
 
-    let camera = new FreeCamera("camera1", new Vector3(5,3,7), scene);
+    let camera = new FreeCamera("camera1", new Vector3(5,3,7), scene)
+    let skyCamera = new FreeCamera('skyCamera', new Vector3(5,3,7), scene)
 
-    const canvas = scene.getEngine().getRenderingCanvas();
+    const canvas = scene.getEngine().getRenderingCanvas()
     camera.speed = 0.5
-    camera.attachControl(canvas, true);
+    camera.attachControl(canvas, true)
+    
+    
 
     let light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
     light.intensity = 0.8;
     res = await SceneLoader.ImportMeshAsync("", "models/", "SM_Ground.babylon")
       const ground = res.meshes[1]
-
+      
     res = await SceneLoader.ImportMeshAsync("SM_Antenna_Bottom", "models/", "Antenna_Bottom.babylon")
-      Locator.setBottom(res.meshes[0])
-      Locator.setBottomPosition(new Vector3(-40,-0.9,10)) 
+      const planeMaterial = new StandardMaterial('planeYellow', scene)
+      planeMaterial.diffuseColor = new Color4.FromHexString('#d9b790')
+      
+      const planeForLocator = MeshBuilder.CreateGround('palneForLocator', {width:10, height:10})
+      planeForLocator.material = planeMaterial
 
+      planeForLocator.position = new Vector3(40,-1,10)
+      Locator.setBottom(res.meshes[0])
+      Locator.setBottomParent(planeForLocator)
+      //Locator.setBottomPosition(new Vector3(-40,-0.9,10)) 
     res = await SceneLoader.ImportMeshAsync("SM_Antenna_Top", "models/", "Antenna_Top.babylon")
       Locator.setTop(res.meshes[0])
       Locator.getTop().parent = Locator.getBottom()
       Locator.setTopPosition(new Vector3(0,5,1.1))
       Locator.setTopRotation(new Vector3(rotationAntennaCoords.x,rotationAntennaCoords.y,rotationAntennaCoords.z))
       Locator.setPivotForTop(new Vector3(0,4.5,0))
+      let cube = MeshBuilder.CreateSphere('sphere', {})
+      cube.parent = Locator.getTop()
+      cube.position = new Vector3(0,1.5,5)
+      skyCamera.parent = cube
+      skyCamera.position = new Vector3(0,1.5,5)
+      
 
     res = await SceneLoader.ImportMeshAsync("Button", "models/", "Button.babylon")
       Locator.setAntennaYButton(res.meshes[0])
@@ -102,11 +123,28 @@ const MainComponent = () => {
       Locator.setAntennaYButtonRotation(new Vector3(1.7,1.5,-0.6)) 
       Locator.setAntennaYButtonPosition(new Vector3(0.15,1,-0.1))
       Locator.setActions('y', socketRef, scene, rotationAntennaCoords)
-
     res = await SceneLoader.ImportMeshAsync("", "models/", "Constructor.babylon")
       house = res.meshes
       const table = house.find(item=>item.name === 'SO_Wall_Divider')
-  
+      const monitor = house.find(item=>item.name === 'SO_Monitor_02')
+      
+      const CoordsMonitor = new MonitorWithCoords('LocatorCoordsMonitor', 1.35, 0.85)
+      CoordsMonitor.addDefaultMaterial()
+      CoordsMonitor.setParent(monitor)
+      CoordsMonitor.setPosition(new Vector3(0.76,0.42,-1.2))
+      CoordsMonitor.setRotation(-Math.PI/2, -0.26, 0)
+      CoordsMonitor.createDefaultGUI()
+      monitorYCoords = CoordsMonitor.setNewCoord('y', -400, rotationAntennaCoords.y)
+      monitorXCoords = CoordsMonitor.setNewCoord('x', -300, rotationAntennaCoords.x)
+
+      const SkyMonitor = new Monitor('SkyViewMonitor', 1.87, 1.15)
+      SkyMonitor.addDefaultMaterial()
+      SkyMonitor.setParent(monitor)
+      SkyMonitor.setPosition(new Vector3(-1,0.568,-1.68))
+      SkyMonitor.setRotation(-1.32, 0.241, -0.067)
+      SkyMonitor.createDefaultGUI()
+      SkyMonitor.addDefaultText()
+      
     res = await SceneLoader.ImportMeshAsync("Button", "models/", "Button.babylon")
       const YControlButton = new ControlButton(res.meshes[0])
       YControlButton.setParent(table)
@@ -127,14 +165,18 @@ const MainComponent = () => {
       XDownControlButton.setPosition(new Vector3(1,0.5,-1.2))
       XDownControlButton.setRotation(new Vector3(3,1.6,-2.1))
       XDownControlButton.setActions('xdown', socketRef, scene, rotationAntennaCoords)
-      addGravity(scene,camera,[ground, Locator.getBottom(), house ])
-      
 
+      //addGravity(scene,camera,[ground, Locator.getBottom(), house])
+      
       const setNewCameraCoords = ()=>{
         const pickInfo = scene.pick(scene.pointerX, scene.pointerY)
-        if(pickInfo.pickedMesh.name !== 'Button'){
+        if(pickInfo.pickedMesh.name === 'SkyViewMonitor'){
+          scene.activeCamera = skyCamera
+        }
+        else if(pickInfo.pickedMesh.name !== 'Button' && pickInfo.pickedMesh.name !== 'locatorPositionPlane'){
           addAnimatedMoveForCamera(camera, scene, pickInfo.pickedPoint._x, pickInfo.pickedPoint._y+2, pickInfo.pickedPoint._z)
         } 
+
       }
       const movePointerAccess = ()=>{
         
@@ -149,24 +191,40 @@ const MainComponent = () => {
               movePointerAccess()
               break
           }
+          case PointerEventTypes.POINTERDOUBLETAP:{
+            scene.activeCamera = camera
+          }
           default:
             break
         }
     });
+    scene.onKeyboardObservable.add((kbInfo) => {
+      switch (kbInfo.type) {
+          case KeyboardEventTypes.KEYDOWN:{
+              if(kbInfo.event.key === 'Escape') scene.activeCamera = camera
+              break
+          }
+          default:
+            break
+      }
+  });
     engine.hideLoadingUI();
   }
   const onRender = scene => {
     if(counter){
       Locator.setTopRotation(rotationAntennaCoords) 
       rotationAntennaCoords.y += 0.01
+      monitorYCoords.text = `Locator Y Coord:${((Math.PI * rotationAntennaCoords.y)/180).toFixed(3)}`
     }
     if(counter2){
       Locator.setTopRotation(rotationAntennaCoords)
       if(rotationAntennaCoords.x >= -1) rotationAntennaCoords.x -=0.01
+      monitorXCoords.text = `Locator X Coord:${((Math.PI * rotationAntennaCoords.x)/180).toFixed(3)}`
     }
     if(counter3){
       Locator.setTopRotation(rotationAntennaCoords)
       if(rotationAntennaCoords.x <= 0.5) rotationAntennaCoords.x +=0.01
+      monitorXCoords.text = `Locator X Coord:${((Math.PI * rotationAntennaCoords.x)/180).toFixed(3)}`
     }
   }
   

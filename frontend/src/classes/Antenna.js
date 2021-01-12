@@ -28,6 +28,9 @@ class Antenna {
     setBottom(bottom){
         this.bottom = bottom
     }
+    setBottomParent(parent){
+        this.getBottom().parent = parent
+    }
     getBottom(){
         return this.bottom
     }
