@@ -5,6 +5,7 @@ const socketio = require('socket.io')
 const path = require('path')
 const app = express()
 const {AntennaCoords} = require('./classes/AntennaCoords')
+const {User} = require('./classes/User')
 
 const server = http.createServer(app)
 const io = socketio(server, {cors:{origin:'*'}})
@@ -12,11 +13,19 @@ const io = socketio(server, {cors:{origin:'*'}})
 const PORT = process.env.PORT || 4000
 
 const Coords = new AntennaCoords()
+//const myAvatar = new User()
 
 const users = []
 
-io.on('connection', socket => {   
+io.on('connection', socket => {  
     socket.on('join game', () => {
+        const myAvatar = new User(socket.id) 
+        users.push(myAvatar)
+        const otherUsers = users.filter(user => user.getId() !== socket.id)
+        if(otherUsers.length){
+            socket.emit('get all users coords', otherUsers)
+            socket.broadcast.emit('other user coords', myAvatar)
+        }
         io.emit('new antennaRotation', Coords.getRotationCoords())
     })
     socket.on('new coords', coords => {
@@ -32,12 +41,24 @@ io.on('connection', socket => {
     socket.on('rotateXDown', bool => {
         io.emit('rotationAccessXDown', bool)
     })
+
+    socket.on('my new coords', coords => {
+        const myAvatar = users.find(item=>item.id === socket.id)
+        myAvatar.setCoords(coords._x, coords._y, coords._z)
+        socket.broadcast.emit('other user coords', myAvatar)
+    })
+
     //WebRTC
     socket.on('join audio',()=>{
-        users.push(socket.id)
-        const otherUser = users.find(id => id !== socket.id)
+        const userExist = users.find(user => user.getId() === socket.id)
+        if(!userExist){
+            console.log('here')
+            users.push(new User(socket.id))
+        }
+        const otherUser = users.find(user => user.getId() !== socket.id)
         if(otherUser){
-            socket.to(otherUser).emit('user joined', socket.id)
+            socket.emit('other user webrtc', otherUser.getId())
+            socket.to(otherUser.getId()).emit('user joined to webrtc', socket.id)
         }
     })
     socket.on('offer', payload => {
@@ -50,8 +71,10 @@ io.on('connection', socket => {
         io.to(incoming.target).emit('ice-candidate', incoming.candidate)
     })
     socket.on('disconnect', ()=>{
-        const index = users.findIndex(id=>id === socket.id)
+        io.emit('delete mesh', socket.id)
+        const index = users.findIndex(user => user.getId() === socket.id)
         users.splice(index, 1)
+        
     })
 })
 if(process.env.PROD){

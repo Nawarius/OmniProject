@@ -23,12 +23,15 @@ class Monitor{
     }
     setRotation(rotX, rotY, rotZ){
         this.getPlane().addRotation(rotX, 0, 0).addRotation(0,rotY,rotZ)
+        //SkyMonitor.setPosition(new Vector3(-1,0.568,-1.685))
+        //SkyMonitor.setRotation(-1.32, 0.241, -0.067) FOR GUI BUTTON
     }
     createDefaultGUI(){
         this.advancedTexture = GUI.AdvancedDynamicTexture.CreateForMesh(this.getPlane())
     }
     addDefaultText(){
         const text = new GUI.Button.CreateSimpleButton('text', `Click for change camera`)
+        text.background = 'black'
         text.fontSize = 50
         text.color = "white";
         this.advancedTexture.addControl(text)
