@@ -13,7 +13,6 @@ const io = socketio(server, {cors:{origin:'*'}})
 const PORT = process.env.PORT || 4000
 
 const Coords = new AntennaCoords()
-//const myAvatar = new User()
 
 const users = []
 

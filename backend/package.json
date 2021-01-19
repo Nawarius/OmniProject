@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "PROD=true node server.js",
-    "dev": "nodemon server.js",
+    "dev": "nodemon ColyseusServer.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "postinstall": "cd ./client && npm install"
   },
@@ -13,6 +13,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@colyseus/schema": "^1.0.9",
+    "colyseus": "^0.14.6",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "socket.io": "^3.0.5"

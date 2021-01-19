@@ -16,47 +16,53 @@ class ControlButton {
     setRotation(rotation){
         this.getControlButton().rotation = rotation
     }
-    setActions(type, socketRef, scene, coords){
+    setActions(type, currentRoom, scene){
         switch(type){
             case 'y':{
                 this.getControlButton().actionManager = new ActionManager(scene)
+                let interval = null
                 this.getControlButton().actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnLongPressTrigger, function(){
-                    socketRef.current.emit('rotateY', true)
+                    interval = setInterval(()=>{
+                        currentRoom.send('changeAntennaCoords', {x:0, y:0.01, z:0})
+                    }, 35)
                 }))
                 this.getControlButton().actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnPickUpTrigger, function(){
-                    socketRef.current.emit('rotateY', false)
+                    clearInterval(interval)
                 }))
                 this.getControlButton().actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, function(){
-                    socketRef.current.emit('rotateY', false)
-                    socketRef.current.emit('new coords', coords)
+                    clearInterval(interval)
                 }))
                 break
             }
             case 'xup':{
                 this.getControlButton().actionManager = new ActionManager(scene)
+                let interval = null
                 this.getControlButton().actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnLongPressTrigger, function(){
-                    socketRef.current.emit('rotateXUp', true)
+                    interval = setInterval(()=>{
+                        currentRoom.send('changeAntennaCoords', {x:-0.01, y:0, z:0})
+                    }, 35)
                 }))
                 this.getControlButton().actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnPickUpTrigger, function(){
-                    socketRef.current.emit('rotateXUp', false)
+                    clearInterval(interval)
                 }))
                 this.getControlButton().actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, function(){
-                    socketRef.current.emit('rotateXUp', false)
-                    socketRef.current.emit('new coords', coords)
+                    clearInterval(interval)
                 }))
                 break
             }
             case 'xdown':{
                 this.getControlButton().actionManager = new ActionManager(scene)
+                let interval = null
                 this.getControlButton().actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnLongPressTrigger, function(){
-                    socketRef.current.emit('rotateXDown', true)
+                    interval = setInterval(()=>{
+                        currentRoom.send('changeAntennaCoords', {x:0.01, y:0, z:0})
+                    }, 35)
                 }))
                 this.getControlButton().actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnPickUpTrigger, function(){
-                    socketRef.current.emit('rotateXDown', false)
+                    clearInterval(interval)
                 }))
                 this.getControlButton().actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, function(){
-                    socketRef.current.emit('rotateXDown', false)
-                    socketRef.current.emit('new coords', coords)
+                    clearInterval(interval)
                 }))
                 break
             }

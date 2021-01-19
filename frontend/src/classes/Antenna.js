@@ -55,18 +55,20 @@ class Antenna {
     setParentAntennaYButton(parent){
         this.getAntennaYButton().parent = parent
     }
-    setActions(type, socketRef, scene, coords){
+    setActions(type, currentRoom, scene){
         this.getAntennaYButton().actionManager = new ActionManager(scene)
-      
+        let interval = null
+
         this.getAntennaYButton().actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnLongPressTrigger, function(){
-            socketRef.current.emit('rotateY', true)
+            interval = setInterval(()=>{
+                currentRoom.send('changeAntennaCoords', {x:0, y:0.01, z:0})
+            }, 35)
         }))
         this.getAntennaYButton().actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnPickUpTrigger, function(){
-            socketRef.current.emit('rotateY', false)
+            clearInterval(interval)
         }))
         this.getAntennaYButton().actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, function(){
-            socketRef.current.emit('rotateY', false)
-            socketRef.current.emit('new coords', coords)
+            clearInterval(interval)
         }))
     }
 }
