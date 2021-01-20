@@ -11,3 +11,10 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+#remote-media-div{
+  position: absolute;
+  border:2px solid red;
+  z-index: 1000;
+  height:20%;
+  width:100%;
+}

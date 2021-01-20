@@ -4,6 +4,8 @@ import * as GUI from 'babylonjs-gui'
 import SceneComponent from './ScenePresent'; 
 import Antenna from '../classes/Antenna'
 import ControlButton from '../classes/ControlButton'
+import {Device} from 'twilio-client'
+import {connect, createLocalTracks } from 'twilio-video'
 import addGravity from '../functions/addGravity'
 import io from 'socket.io-client'
 import createPeer from '../WebRTC/createPeer'
@@ -22,15 +24,72 @@ let monitorYCoords = null
 let monitorXCoords = null
 const users = []
 
+
 const MainComponent = () => {
+  // useEffect(()=>{
+  //   fetch('http://localhost:4000/token').then(res=>{
+  //     if(res.status !== 200) throw new Error('Shit')
+  //     res.json()
+  //   }).then(resData=>{
+  //     console.log(resData)
+  //   })
+  // },[])
   const clientRef = useRef()
   const roomRef = useRef()
-
+  const twilioRemoteMedia = useRef()
+  
+  
   const onSceneReady = async function(scene, engine) {
     let camera = new FreeCamera("camera1", new Vector3(5,3,7), scene)
 
     clientRef.current = new Colyseus.Client('ws://localhost:4000')
       roomRef.current = await clientRef.current.joinOrCreate('mainGame')
+
+      //Twilio
+      roomRef.current.onMessage('accessToken', jwt => {
+        createLocalTracks({
+          audio: true,
+        }).then(localTracks => {
+          return connect(jwt,
+           {
+            name: 'Test Room',
+            tracks: localTracks
+          })
+        }).then(room => {
+          const localParticipant = room.localParticipant
+
+          room.participants.forEach(participant => {
+            participant.tracks.forEach(publication => {
+              if (publication.track) {
+                document.getElementById('remote-media-div').appendChild(publication.track.attach());
+              }
+            });
+          
+           participant.on('trackSubscribed', track => {
+              document.getElementById('remote-media-div').appendChild(track.attach());
+            });
+          });
+    
+          room.on('participantConnected', participant => {
+            participant.tracks.forEach(publication => {
+              if (publication.isSubscribed) {
+                const track = publication.track;
+                document.getElementById('remote-media-div').appendChild(track.attach());
+              }
+            })
+          
+            participant.on('trackSubscribed', track => {
+              document.getElementById('remote-media-div').appendChild(track.attach());
+            })
+          })
+    
+          room.once('participantDisconnected', participant => {
+            console.log(`Participant "${participant.identity}" has disconnected from the Room`)
+          })
+          console.log(`Connected to Room: ${room.name}`)
+        })
+      })
+      //Twilio end
 
       roomRef.current.onMessage('changeAntennaCoords', ({x,y,z})=>{
         if(Locator.getTop()){
@@ -223,7 +282,7 @@ const MainComponent = () => {
     return <>
       <div>
         {/* <audio autoPlay ref = {partnerVideoRef} /> */}
-        <SceneComponent antialias onSceneReady={onSceneReady} onRender={onRender} id='my-canvas' />
+        <SceneComponent antialias onSceneReady={onSceneReady} onRender={onRender} id='my-canvas' twilioRemoteMedia = {twilioRemoteMedia}/>
       </div>
     </>
 }

@@ -38,9 +38,9 @@ const ScenePresent = (props) => {
         }
         //eslint-disable-next-line react-hooks/exhaustive-deps
     }, [reactCanvas])
-    return (
-        <canvas ref={reactCanvas} style = {{position:'absolute',width:'100%', height:'100%'}}/>
-    );
+    return <>
+        <canvas ref = {reactCanvas} style = {{position:'absolute',width:'100%', height:'100%'}}/>
+    </>
 }
 
 export default ScenePresent
